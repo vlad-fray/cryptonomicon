@@ -1,26 +1,69 @@
 <template>
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
+    <div
+      :class="{ hidden: allTickerNames.length }"
+      class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center"
+    >
+      <svg
+        class="animate-spin -ml-1 mr-3 h-12 w-12 text-white"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        ></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+      </svg>
+    </div>
+
     <div class="container">
-      <div class="w-full my-4"></div>
       <section>
-        <div class="flex">
-          <div class="max-w-xs">
-            <label for="wallet" class="block text-sm font-medium text-gray-700">
-              Тикер
-            </label>
-            <div class="mt-1 relative rounded-md shadow-md">
-              <input
-                v-model="ticker"
-                @keydown.enter="add"
-                type="text"
-                name="wallet"
-                id="wallet"
-                class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
-                placeholder="Например DOGE"
-              />
-            </div>
+        <div class="flex flex-col max-w-xs">
+          <label for="wallet" class="block text-sm font-medium text-gray-700">
+            Тикер
+          </label>
+          <div class="mt-1 relative rounded-md shadow-md">
+            <input
+              v-model.trim="tickerInput"
+              @input="addingError = null"
+              @keydown.enter="add"
+              type="text"
+              name="wallet"
+              id="wallet"
+              class="block w-full pr-10 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 sm:text-sm rounded-md"
+              placeholder="Например DOGE"
+            />
+          </div>
+
+          <div
+            v-if="similarTickersList.length"
+            class="flex bg-white shadow-md p-1 rounded-md flex-wrap"
+          >
+            <span
+              v-for="ticker in similarTickersList"
+              :key="ticker"
+              @click="tickerInput = ticker"
+              class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
+            >
+              {{ ticker }}
+            </span>
+          </div>
+
+          <div v-if="addingError" class="text-sm text-red-600">
+            {{ addingError }}
           </div>
         </div>
+
         <button
           @click="add"
           type="button"
@@ -50,7 +93,7 @@
             v-for="t in tickers"
             :key="t.name"
             @click="selectTicker(t)"
-            :class="{ 'shadow-xl': sel === t }"
+            :class="{ 'shadow-xl': selectedTicker === t }"
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
@@ -85,20 +128,20 @@
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
 
-      <section v-if="sel" class="relative">
+      <section v-if="selectedTicker" class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          {{ sel.name }} - USD
+          {{ selectedTicker.name }} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
-            v-for="(bar, idx) in normalizeGraph()"
+            v-for="(bar, idx) in normalizeGraph"
             :key="idx"
             :style="{ height: `${bar}%` }"
             class="bg-purple-800 border w-10"
           ></div>
         </div>
         <button
-          @click="sel = null"
+          @click="selectedTicker = null"
           type="button"
           class="absolute top-0 right-0"
         >
@@ -130,51 +173,47 @@
 </template>
 
 <script>
+const API_KEY =
+  "2b70203fac70acc9404c946a44a52dda47258e9fcee16f68472f89336c74a817";
+const BASE_URL = "https://min-api.cryptocompare.com/data";
+const BASE_PRICE_URL = `${BASE_URL}/price`;
+const ALL_TICKER_NAMES_URL = `${BASE_URL}/all/coinlist?summary=true`;
+
+const requestForAllTickerNames = async () => {
+  const res = await fetch(ALL_TICKER_NAMES_URL);
+
+  if (!res.ok) {
+    console.log("Request for tickers failed");
+    return;
+  }
+
+  const data = await res.json();
+
+  return Object.entries(data.Data).map(([name, tickerData]) => ({
+    name,
+    fullname: tickerData.FullName
+  }));
+};
+
 export default {
   name: "App",
 
   data() {
     return {
-      ticker: "",
+      tickerInput: "",
       tickers: [],
+      allTickerNames: [],
       graph: [],
-      sel: null
+      selectedTicker: null,
+      addingError: null
     };
   },
 
-  methods: {
-    add() {
-      if (this.ticker === "") return;
-      const API_KEY =
-        "2b70203fac70acc9404c946a44a52dda47258e9fcee16f68472f89336c74a817";
-      const BASE_URL = "https://min-api.cryptocompare.com/data/price";
+  created() {
+    this.loadAllTickerNames();
+  },
 
-      const currentTicker = {
-        name: this.ticker,
-        price: "-"
-      };
-
-      const ticker_query = `?fsym=${currentTicker.name}&tsyms=USD&api_key=${API_KEY}`;
-
-      this.tickers.push(currentTicker);
-      setInterval(async () => {
-        const res = await fetch(BASE_URL + ticker_query);
-        const data = await res.json();
-        this.tickers.find(ticker => ticker.name === currentTicker.name).price =
-          data.USD;
-
-        if (this.sel?.name === currentTicker.name) {
-          console.log("push", data.USD);
-          this.graph.push(data.USD);
-        }
-      }, 3000);
-      this.ticker = "";
-    },
-
-    handleDelete(tickerToRemove) {
-      this.tickers = this.tickers.filter(t => t !== tickerToRemove);
-    },
-
+  computed: {
     normalizeGraph() {
       const maxValue = Math.max(...this.graph);
       const minValue = Math.min(...this.graph);
@@ -186,12 +225,92 @@ export default {
       );
     },
 
-    selectTicker(ticker) {
-      this.sel = ticker;
-      this.graph = [];
+    similarTickersList() {
+      if (this.tickerInputUppercase === "") return [];
+
+      const similarTickers = [];
+
+      // Такой цикл нужен из-за длины массива allTickerNames >7000
+      for (let i = 0; i < this.allTickerNames.length; i++) {
+        if (
+          this.allTickerNames[i].name.includes(this.tickerInputUppercase) ||
+          this.allTickerNames[i].fullname.includes(this.tickerInputUppercase)
+        ) {
+          similarTickers.push(this.allTickerNames[i].name);
+        }
+
+        if (similarTickers.length === 4) break;
+      }
+
+      return similarTickers;
+    },
+
+    tickerInputUppercase() {
+      return this.tickerInput.toUpperCase();
     }
+  },
+
+  methods: {
+    add() {
+      if (!this.checkIsValidInput()) return;
+
+      const currentTicker = {
+        name: this.tickerInputUppercase,
+        price: "-"
+      };
+
+      const ticker_query = `?fsym=${currentTicker.name}&tsyms=USD&api_key=${API_KEY}`;
+
+      this.tickers.push(currentTicker);
+      setInterval(async () => {
+        const res = await fetch(BASE_PRICE_URL + ticker_query);
+        const data = await res.json();
+        this.tickers.find(ticker => ticker.name === currentTicker.name).price =
+          data.USD;
+
+        if (this.selectedTicker?.name === currentTicker.name) {
+          this.graph.push(data.USD);
+        }
+      }, 3000);
+      this.tickerInput = "";
+    },
+
+    handleDelete(tickerToRemove) {
+      this.tickers = this.tickers.filter(t => t !== tickerToRemove);
+    },
+
+    selectTicker(ticker) {
+      this.selectedTicker = ticker;
+      this.graph = [];
+    },
+
+    async loadAllTickerNames() {
+      this.allTickerNames = await requestForAllTickerNames();
+    },
+
+    checkIsValidInput() {
+      if (this.tickerInputUppercase === "") {
+        this.addingError = "Input is empty";
+        return false;
+      }
+
+      if (
+        !this.allTickerNames.find(
+          tickerName => this.tickerInputUppercase === tickerName.name
+        )
+      ) {
+        this.addingError = "This ticker does not exist";
+        return false;
+      }
+
+      if (this.tickers.find(ticker => ticker.name === this.tickerInputUppercase)) {
+        this.addingError = "This ticker is already added";
+        return false;
+      }
+
+      this.addingError = null;
+      return true;
+    },
   }
 };
 </script>
-
-<style src="./app.css"></style>
