@@ -211,6 +211,8 @@ export default {
 
   created() {
     this.loadAllTickerNames();
+    this.tickers = JSON.parse(localStorage.getItem("cryptonomicon-list")) || [];
+    this.tickers.forEach(ticker => this.subscribeToUpdates(ticker.name));
   },
 
   computed: {
@@ -251,6 +253,20 @@ export default {
   },
 
   methods: {
+    subscribeToUpdates(tickerName) {
+      const ticker_query = `?fsym=${tickerName}&tsyms=USD&api_key=${API_KEY}`;
+      setInterval(async () => {
+        const res = await fetch(BASE_PRICE_URL + ticker_query);
+        const data = await res.json();
+        this.tickers.find(ticker => ticker.name === tickerName).price =
+          data.USD;
+
+        if (this.selectedTicker?.name === tickerName) {
+          this.graph.push(data.USD);
+        }
+      }, 5000);
+    },
+
     add() {
       if (!this.checkIsValidInput()) return;
 
@@ -259,19 +275,12 @@ export default {
         price: "-"
       };
 
-      const ticker_query = `?fsym=${currentTicker.name}&tsyms=USD&api_key=${API_KEY}`;
-
       this.tickers.push(currentTicker);
-      setInterval(async () => {
-        const res = await fetch(BASE_PRICE_URL + ticker_query);
-        const data = await res.json();
-        this.tickers.find(ticker => ticker.name === currentTicker.name).price =
-          data.USD;
 
-        if (this.selectedTicker?.name === currentTicker.name) {
-          this.graph.push(data.USD);
-        }
-      }, 3000);
+      localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
+
+      this.subscribeToUpdates(currentTicker.name);
+
       this.tickerInput = "";
     },
 
@@ -303,14 +312,16 @@ export default {
         return false;
       }
 
-      if (this.tickers.find(ticker => ticker.name === this.tickerInputUppercase)) {
+      if (
+        this.tickers.find(ticker => ticker.name === this.tickerInputUppercase)
+      ) {
         this.addingError = "This ticker is already added";
         return false;
       }
 
       this.addingError = null;
       return true;
-    },
+    }
   }
 };
 </script>
