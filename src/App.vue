@@ -86,14 +86,14 @@
         </button>
       </section>
 
-      <template v-if="tickers.length">
+      <template v-if="addedTickers.length">
         <p>
           <span class="text-gray-700 font-medium mr-4">
             Страница: {{ page }}
           </span>
           <button
-            :disabled="page === 1"
-            :class="{ 'opacity-20': page === 1 }"
+            :disabled="page <= 1"
+            :class="{ 'opacity-20': page <= 1 }"
             @click="page = page - 1"
             class="mx-1 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
           >
@@ -123,11 +123,11 @@
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="t in filteredTickers.current"
+            v-for="t in paginatedTickers"
             :key="t.name"
-            @click="selectTicker(t)"
-            :class="{ 'shadow-xl': selectedTicker === t }"
-            class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
+            @click="selectedTicker = t"
+            :class="selectedTicker?.name === t.name ? 'shadow-xl' : 'shadow'"
+            class="bg-white overflow-hidden rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
               <dt class="text-sm font-medium text-gray-500 truncate">
@@ -159,7 +159,7 @@
             </button>
           </div>
 
-          <h3 v-show="!filteredTickers.current.length" class="text-gray-900">
+          <h3 v-show="!paginatedTickers.length" class="text-gray-900">
             No matches
           </h3>
         </dl>
@@ -172,7 +172,7 @@
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
-            v-for="(bar, idx) in normalizeGraph"
+            v-for="(bar, idx) in normalizedGraph"
             :key="idx"
             :style="{ height: `${bar}%` }"
             class="bg-purple-800 border w-10"
@@ -240,7 +240,7 @@ export default {
   data() {
     return {
       tickerInput: "",
-      tickers: [],
+      addedTickers: [],
       allTickerNames: [],
       graph: [],
       selectedTicker: null,
@@ -251,20 +251,16 @@ export default {
   },
 
   created() {
-    const windowData = Object.fromEntries(
-      new URL(window.location).searchParams.entries()
-    );
-
-    this.filter = windowData.filter || "";
-    this.page = +windowData.page || "";
+    this.setPageStateQueryOnLoad();
 
     this.loadAllTickerNames();
-    this.tickers = JSON.parse(localStorage.getItem("cryptonomicon-list")) || [];
-    this.tickers.forEach(ticker => this.subscribeToUpdates(ticker.name));
+    this.addedTickers =
+      JSON.parse(localStorage.getItem("cryptonomicon-list")) || [];
+    this.addedTickers.forEach(ticker => this.subscribeToUpdates(ticker.name));
   },
 
   computed: {
-    normalizeGraph() {
+    normalizedGraph() {
       const maxValue = Math.max(...this.graph);
       const minValue = Math.min(...this.graph);
 
@@ -300,21 +296,27 @@ export default {
     },
 
     filteredTickers() {
-      const filteredTickers = this.tickers.filter(ticker =>
+      return this.addedTickers.filter(ticker =>
         ticker.name.includes(this.filter.toUpperCase())
       );
+    },
 
-      return {
-        current: filteredTickers.slice(
-          TICKERS_PER_PAGE * (this.page - 1),
-          TICKERS_PER_PAGE * this.page
-        ),
-        full: filteredTickers
-      };
+    paginatedTickers() {
+      return this.filteredTickers.slice(
+        TICKERS_PER_PAGE * (this.page - 1),
+        TICKERS_PER_PAGE * this.page
+      );
     },
 
     maxPage() {
-      return Math.ceil(this.filteredTickers.full.length / TICKERS_PER_PAGE);
+      return Math.ceil(this.filteredTickers.length / TICKERS_PER_PAGE) || 1;
+    },
+
+    pageStateQuery() {
+      return {
+        filter: this.filter,
+        page: this.page
+      };
     }
   },
 
@@ -324,7 +326,7 @@ export default {
       setInterval(async () => {
         const res = await fetch(BASE_PRICE_URL + ticker_query);
         const data = await res.json();
-        this.tickers.find(ticker => ticker.name === tickerName).price =
+        this.addedTickers.find(ticker => ticker.name === tickerName).price =
           data.USD;
 
         if (this.selectedTicker?.name === tickerName) {
@@ -341,31 +343,28 @@ export default {
         price: "-"
       };
 
-      this.tickers.push(currentTicker);
-
-      localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
+      this.addedTickers = [...this.addedTickers, currentTicker];
 
       this.subscribeToUpdates(currentTicker.name);
-
-      this.tickerInput = "";
-      this.filter = "";
-      this.page = 1;
     },
 
     handleDelete(tickerToRemove) {
-      this.tickers = this.tickers.filter(t => t !== tickerToRemove);
-      localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
+      this.addedTickers = this.addedTickers.filter(t => t !== tickerToRemove);
 
-      if (this.maxPage < this.page) this.page = this.maxPage;
-    },
-
-    selectTicker(ticker) {
-      this.selectedTicker = ticker;
-      this.graph = [];
+      if (this.selectedTicker === tickerToRemove) this.selectedTicker = null;
     },
 
     async loadAllTickerNames() {
       this.allTickerNames = await requestForAllTickerNames();
+    },
+
+    setPageStateQueryOnLoad() {
+      const windowData = Object.fromEntries(
+        new URL(window.location).searchParams.entries()
+      );
+
+      this.filter = windowData.filter || "";
+      this.page = +windowData.page || 1;
     },
 
     checkIsValidInput() {
@@ -384,7 +383,9 @@ export default {
       }
 
       if (
-        this.tickers.find(ticker => ticker.name === this.tickerInputUppercase)
+        this.addedTickers.find(
+          ticker => ticker.name === this.tickerInputUppercase
+        )
       ) {
         this.addingError = "Эта монета уже добавлена";
         return false;
@@ -392,9 +393,28 @@ export default {
 
       this.addingError = null;
       return true;
+    }
+  },
+
+  watch: {
+    paginatedTickers() {
+      if (this.maxPage < this.page) this.page = this.maxPage;
     },
 
-    setUrlQuery() {
+    selectedTicker() {
+      this.graph = [];
+    },
+
+    addedTickers() {
+      this.tickerInput = "";
+      this.filter = "";
+      localStorage.setItem(
+        "cryptonomicon-list",
+        JSON.stringify(this.addedTickers)
+      );
+    },
+
+    pageStateQuery() {
       const { pathname } = window.location;
       const filter = this.filter ? `filter=${this.filter}` : "";
       const page = this.page ? `page=${this.page}` : "";
@@ -404,15 +424,6 @@ export default {
         document.title,
         `${pathname}?${[page, filter].filter(query => query !== "").join("&")}`
       );
-    }
-  },
-
-  watch: {
-    filter() {
-      this.setUrlQuery();
-    },
-    page() {
-      this.setUrlQuery();
     }
   }
 };
