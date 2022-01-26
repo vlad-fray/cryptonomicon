@@ -22,3 +22,8 @@ npm run lint
 
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
+
+### Start using tailwind postcss
+```
+npx tailwindcss -i ./src/app.css -o ./src/assets/tailwind.css --watch
+```
