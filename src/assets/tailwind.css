@@ -718,6 +718,21 @@ select {
   margin-bottom: 2rem;
 }
 
+.mx-4 {
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+.mx-2 {
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.mx-1 {
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+}
+
 .mt-1 {
   margin-top: 0.25rem;
 }
@@ -748,6 +763,30 @@ select {
 
 .mr-auto {
   margin-right: auto;
+}
+
+.mr-1\.5 {
+  margin-right: 0.375rem;
+}
+
+.mr-1 {
+  margin-right: 0.25rem;
+}
+
+.ml-1 {
+  margin-left: 0.25rem;
+}
+
+.ml-3 {
+  margin-left: 0.75rem;
+}
+
+.ml-4 {
+  margin-left: 1rem;
+}
+
+.mr-4 {
+  margin-right: 1rem;
 }
 
 .block {
@@ -1067,6 +1106,10 @@ select {
 
 .opacity-75 {
   opacity: 0.75;
+}
+
+.opacity-20 {
+  opacity: 0.2;
 }
 
 .shadow-md {
