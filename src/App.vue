@@ -126,15 +126,21 @@
             v-for="t in paginatedTickers"
             :key="t.name"
             @click="selectedTicker = t"
-            :class="selectedTicker?.name === t.name ? 'shadow-xl' : 'shadow'"
+            :class="{
+              'shadow-xl': selectedTicker?.name === t.name,
+              shadow: !(selectedTicker?.name === t.name)
+            }"
             class="bg-white overflow-hidden rounded-lg border-purple-800 border-solid cursor-pointer"
           >
-            <div class="px-4 py-5 sm:p-6 text-center">
+            <div
+              :class="{ 'bg-red-300': !t.price }"
+              class="px-4 py-5 sm:p-6 text-center"
+            >
               <dt class="text-sm font-medium text-gray-500 truncate">
                 {{ t.name }} - USD
               </dt>
               <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                {{ t.price }}
+                {{ t.price || "-" }}
               </dd>
             </div>
             <div class="w-full border-t border-gray-200"></div>
@@ -308,7 +314,7 @@ export default {
 
       const currentTicker = {
         name: this.tickerInputUppercase,
-        price: "-"
+        price: null
       };
 
       this.addedTickers = [...this.addedTickers, currentTicker];
@@ -424,7 +430,12 @@ export default {
           return;
         }
 
-        if (currentTicker.price !== "-") this.graph.push(currentTicker.price);
+        if (
+          currentTicker.price !== null &&
+          currentTicker.price !== this.graph[this.graph.length - 1]
+        ) {
+          this.graph.push(currentTicker.price);
+        }
       }
     },
 
