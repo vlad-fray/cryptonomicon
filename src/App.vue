@@ -381,7 +381,14 @@ export default {
     },
 
     updateTickerPrice(tickerName, price) {
-      this.addedTickers.find(t => t.name === tickerName).price = price;
+      this.addedTickers = this.addedTickers.map(t => {
+        if (t.name !== tickerName) return t;
+
+        return {
+          name: tickerName,
+          price
+        };
+      });
     }
   },
 
@@ -394,20 +401,30 @@ export default {
       this.graph = [];
     },
 
-    addedTickers() {
-      this.tickerInput = "";
-      this.filter = "";
+    addedTickers(newArr, prevArr) {
+      //Чистка полей ввода монеты при её добавлении
+      if (prevArr.length < newArr.length) {
+        this.tickerInput = "";
+        this.filter = "";
+      }
+
       localStorage.setItem(
         "cryptonomicon-list",
         JSON.stringify(this.addedTickers)
       );
 
       if (this.selectedTicker?.name) {
-        const currentPrice = this.addedTickers.find(
+        const currentTicker = this.addedTickers.find(
           t => t.name === this.selectedTicker.name
-        ).price;
+        );
 
-        if (currentPrice !== "-") this.graph.push(currentPrice);
+        //Снятия фокуса с монеты при её удалении из массива addedTickers
+        if (!currentTicker) {
+          this.selectedTicker = null;
+          return;
+        }
+
+        if (currentTicker.price !== "-") this.graph.push(currentTicker.price);
       }
     },
 
