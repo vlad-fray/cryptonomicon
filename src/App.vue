@@ -181,7 +181,7 @@
           ref="graph"
         >
           <div
-            v-for="(bar, idx) in slicedGraph"
+            v-for="(bar, idx) in normalizedGraph"
             :key="idx"
             :style="{ height: `${bar}%` }"
             class="bg-purple-800 border w-10"
@@ -252,24 +252,20 @@ export default {
 
   computed: {
     normalizedGraph() {
-      const maxValue = Math.max(...this.graph);
-      const minValue = Math.min(...this.graph);
-
-      if (minValue === maxValue) return this.graph.map(() => 50);
-
-      return this.graph.map(
-        price => 10 + ((price - minValue) * 90) / (maxValue - minValue)
-      );
-    },
-
-    slicedGraph() {
       let count = 1;
       if (this.$refs.graph) {
         const width = this.$refs.graph.clientWidth;
         count = width / 30;
       }
+      const slicedGraph = this.graph.slice(-count);
 
-      return this.normalizedGraph.slice(-count);
+      const maxValue = Math.max(...slicedGraph);
+      const minValue = Math.min(...slicedGraph);
+
+      if (minValue === maxValue) return slicedGraph.map(() => 50);
+      return slicedGraph.map(
+        price => 10 + ((price - minValue) * 90) / (maxValue - minValue)
+      );
     },
 
     similarTickersList() {
