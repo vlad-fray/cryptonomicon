@@ -33,7 +33,8 @@ const calcBTCtoUSD = priceInBTC => {
 
 const updateTicker = (name, price) => {
   tickersHandlers[name].forEach(fn => {
-    fn(price);
+    const fixedPrice = price.toString().split(".").map(part => part.substr(0,8)).join('.');
+    fn(fixedPrice);
   });
 };
 
