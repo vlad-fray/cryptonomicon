@@ -176,9 +176,12 @@
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
           {{ selectedTicker.name }} - USD
         </h3>
-        <div class="flex items-end border-gray-600 border-b border-l h-64">
+        <div
+          class="flex items-end border-gray-600 border-b border-l h-64"
+          ref="graph"
+        >
           <div
-            v-for="(bar, idx) in normalizedGraph"
+            v-for="(bar, idx) in slicedGraph"
             :key="idx"
             :style="{ height: `${bar}%` }"
             class="bg-purple-800 border w-10"
@@ -257,6 +260,16 @@ export default {
       return this.graph.map(
         price => 10 + ((price - minValue) * 90) / (maxValue - minValue)
       );
+    },
+
+    slicedGraph() {
+      let count = 1;
+      if (this.$refs.graph) {
+        const width = this.$refs.graph.clientWidth;
+        count = width / 30;
+      }
+
+      return this.normalizedGraph.slice(-count);
     },
 
     similarTickersList() {
