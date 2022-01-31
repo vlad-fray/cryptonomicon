@@ -14,7 +14,11 @@
         class="bg-purple-800 border w-10"
       ></div>
     </div>
-    <button @click="closeGraph" type="button" class="absolute top-0 right-0">
+    <button
+      @click="$emit('closeGraph')"
+      type="button"
+      class="absolute top-0 right-0"
+    >
       <svg
         xmlns="http://www.w3.org/2000/svg"
         xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -70,11 +74,6 @@ export default {
       return slicedGraph.map(
         price => 10 + ((price - minValue) * 90) / (maxValue - minValue)
       );
-    }
-  },
-  methods: {
-    closeGraph() {
-      this.$emit("closeGraph");
     }
   }
 };
