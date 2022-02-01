@@ -1,4 +1,10 @@
 <template>
+  <div
+    :class="{ hidden: allTickerNames.length }"
+    class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center"
+  >
+    <loading-circle-icon />
+  </div>
   <div class="flex flex-col max-w-xs">
     <label for="wallet" class="block text-sm font-medium text-gray-700">
       Тикер
@@ -48,6 +54,7 @@
 
 <script>
 import AddCircleIcon from "../icons/AddCircleIcon.vue";
+import LoadingCircleIcon from "../icons/LoadingCircleIcon.vue";
 import { getAllTickerNames } from "../api.js";
 
 export default {
@@ -59,6 +66,7 @@ export default {
   },
   emits: ["addTicker"],
   components: {
+    LoadingCircleIcon,
     AddCircleIcon
   },
   data() {

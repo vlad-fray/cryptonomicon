@@ -1,12 +1,5 @@
 <template>
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
-    <div
-      :class="{ hidden: addedTickers.length }"
-      class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center"
-    >
-      <loading-circle-icon />
-    </div>
-
     <div class="container">
       <add-ticker-form :addedTickers="addedTickers" @addTicker="addTicker" />
 
@@ -31,7 +24,6 @@
 <script>
 import { subscribeToTickerUpdate, unsubscribeFromTickerUpdate } from "./api.js";
 
-import LoadingCircleIcon from "./icons/LoadingCircleIcon.vue";
 import TickersGraph from "./components/TickersGraph.vue";
 import AddedTickersList from "./components/AddedTickersList.vue";
 import AddTickerForm from "./components/AddTickerForm.vue";
@@ -39,7 +31,6 @@ import AddTickerForm from "./components/AddTickerForm.vue";
 export default {
   name: "App",
   components: {
-    LoadingCircleIcon,
     TickersGraph,
     AddedTickersList,
     AddTickerForm
