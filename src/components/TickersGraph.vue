@@ -4,16 +4,22 @@
       {{ tickerName }} - USD
     </h3>
     <div
-      class="flex items-end border-gray-600 border-b border-l h-64"
+      class="flex items-end justify-end border-gray-600 border-b border-l h-64"
       ref="graph"
     >
       <div
         v-for="(bar, idx) in normalizedGraph"
         :key="idx"
         :style="{ height: `${bar}%` }"
-        class="bg-purple-800 border w-10"
+        class="bg-purple-800 border w-8"
       ></div>
     </div>
+    <p v-if="priceChange >= 0" class="font-medium text-green-700">
+      {{ priceChange.toFixed(6) }} USD
+    </p>
+    <p v-if="priceChange < 0" class="font-medium text-red-700">
+      {{ priceChange.toFixed(6) }} USD
+    </p>
     <button
       @click="$emit('closeGraph')"
       type="button"
@@ -58,21 +64,33 @@ export default {
   },
   emits: ["closeGraph"],
   computed: {
-    normalizedGraph() {
+    slicedGraph() {
       let count = 1;
       if (this.$refs.graph) {
         const width = this.$refs.graph.clientWidth;
-        count = width / 30;
+        count = Math.ceil(width / 30);
       }
-      const slicedGraph = this.graph.slice(-count);
+      return this.graph.slice(-count);
+    },
+    priceChange() {
+      if (!this.slicedGraph.length) return 0;
 
-      const maxValue = Math.max(...slicedGraph);
-      const minValue = Math.min(...slicedGraph);
+      const lastEl = this.slicedGraph.length - 1;
+      return this.slicedGraph[lastEl] - this.slicedGraph[0];
+    },
+    maxValue() {
+      return Math.max(...this.slicedGraph);
+    },
+    minValue() {
+      return Math.min(...this.slicedGraph);
+    },
+    normalizedGraph() {
+      if (this.minValue === this.maxValue)
+        return this.slicedGraph.map(() => 50);
 
-      if (minValue === maxValue) return slicedGraph.map(() => 50);
-
-      return slicedGraph.map(
-        price => 10 + ((price - minValue) * 90) / (maxValue - minValue)
+      return this.slicedGraph.map(
+        price =>
+          10 + ((price - this.minValue) * 90) / (this.maxValue - this.minValue)
       );
     }
   }
