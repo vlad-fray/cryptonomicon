@@ -1,35 +1,36 @@
 <template>
-  <p>
-    <span class="text-gray-700 font-medium mr-4"> Страница: {{ page }} </span>
-    <button
-      :disabled="page <= 1"
-      :class="{ 'opacity-20': page <= 1 }"
-      @click="page = page - 1"
-      class="mx-1 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-    >
-      Назад
-    </button>
-    <button
-      :disabled="page >= maxPage"
-      :class="{ 'opacity-20': page >= maxPage }"
-      @click="page = page + 1"
-      class="mx-1 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-    >
-      Вперёд
-    </button>
+  <div class="flex flex-wrap items-center gap-4">
+    <span class="text-gray-700 font-medium"> Страница: {{ page }} </span>
+    <div>
+      <button
+        :disabled="page <= 1"
+        :class="{ 'opacity-20': page <= 1 }"
+        @click="page = page - 1"
+        class="mx-1 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+      >
+        Назад
+      </button>
+      <button
+        :disabled="page >= maxPage"
+        :class="{ 'opacity-20': page >= maxPage }"
+        @click="page = page + 1"
+        class="mx-1 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+      >
+        Вперёд
+      </button>
+    </div>
 
-    <label for="filter" class="ml-4 text-sm font-medium text-gray-700">
+    <label for="filter" class="text-sm font-medium text-gray-700 max-w-sm">
       Фильтр:
+      <input
+        type="text"
+        id="filter"
+        v-model.trim="filter"
+        @input="page = 1"
+        class="ml-1 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 rounded-md"
+      />
     </label>
-
-    <input
-      type="text"
-      id="filter"
-      v-model="filter"
-      @input="page = 1"
-      class="pr-10 ml-1 border-gray-300 text-gray-900 focus:outline-none focus:ring-gray-500 focus:border-gray-500 rounded-md"
-    />
-  </p>
+  </div>
   <hr class="w-full border-t border-gray-600 my-4" />
   <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
     <div
@@ -149,7 +150,7 @@ export default {
     },
     paginatedTickers() {
       if (this.maxPage < this.page) this.page = this.maxPage;
-    },
+    }
   }
 };
 </script>
